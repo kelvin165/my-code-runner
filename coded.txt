@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ultimate Multi-Language Code Runner</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
+  />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin: 10px 0 5px;
+    }
+    select,
+    button {
+      font-size: 16px;
+      padding: 10px;
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 15px;
+      cursor: pointer;
+    }
+    #editor {
+      height: 300px;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    #output {
+      background: #222;
+      color: #0f0;
+      padding: 15px;
+      min-height: 150px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      border-radius: 4px;
+    }
+    .btn-group {
+      margin-bottom: 15px;
+      max-width: 400px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn-group button {
+      flex: 1;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ultimate Multi-Language Code Runner</h1>
+
+  <label for="language">Select Language:</label>
+  <select id="language">
+    <option value="54">C++ (GCC 9.2.0)</option>
+    <option value="71" selected>Python (3.8.1)</option>
+    <option value="62">Java (OpenJDK 13.0.1)</option>
+    <option value="63">C# (Mono 6.6.0.161)</option>
+    <option value="50">C (GCC 9.2.0)</option>
+    <option value="80">JavaScript (Node.js 12.14.0)</option>
+    <option value="72">Ruby (2.7.0)</option>
+    <option value="51">Go (1.13.5)</option>
+    <option value="55">C++ (Clang 7.0.1)</option>
+    <option value="60">Swift (5.2.4)</option>
+    <option value="78">PHP (7.4.1)</option>
+    <option value="77">Pascal (FPC 3.0.4)</option>
+    <!-- Add more language IDs from Judge0 docs -->
+  </select>
+
+  <div id="editor">// Write your code here</div>
+
+  <div class="btn-group">
+    <button id="runBtn">Run Code</button>
+    <button id="clearBtn">Clear Code</button>
+    <button id="downloadBtn">Download Code</button>
+  </div>
+
+  <h2>Output:</h2>
+  <pre id="output"></pre>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/ruby/ruby.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/go/go.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/swift/swift.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/pascal/pascal.min.js"></script>
+
+  <script>
+    // Language to CodeMirror mode mapping
+    const languageModes = {
+      54: "text/x-c++src",
+      71: "python",
+      62: "text/x-java",
+      63: "text/x-csharp",
+      50: "text/x-csrc",
+      80: "javascript",
+      72: "ruby",
+      51: "go",
+      55: "text/x-c++src",
+      60: "swift",
+      78: "php",
+      77: "pascal",
+    };
+
+    // Starter code for languages
+    const starterCodes = {
+      54: `#include <iostream>
+int main() {
+  std::cout << "Hello, world!" << std::endl;
+  return 0;
+}`,
+      71: `print("Hello, world!")`,
+      62: `public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello, world!");
+  }
+}`,
+      63: `using System;
+class Program {
+  static void Main() {
+    Console.WriteLine("Hello, world!");
+  }
+}`,
+      50: `#include <stdio.h>
+int main() {
+  printf("Hello, world!\\n");
+  return 0;
+}`,
+      80: `console.log("Hello, world!");`,
+      72: `puts "Hello, world!"`,
+      51: `package main
+import "fmt"
+func main() {
+  fmt.Println("Hello, world!")
+}`,
+      55: `#include <iostream>
+int main() {
+  std::cout << "Hello, Clang world!" << std::endl;
+  return 0;
+}`,
+      60: `print("Hello, Swift world!")`,
+      78: `<?php
+echo "Hello, world!";`,
+      77: `program HelloWorld;
+begin
+  writeln('Hello, world!');
+end.`,
+    };
+
+    const languageSelect = document.getElementById("language");
+    const outputElem = document.getElementById("output");
+
+    // Setup CodeMirror editor
+    const editor = CodeMirror(document.getElementById("editor"), {
+      value: starterCodes[languageSelect.value] || "",
+      mode: languageModes[languageSelect.value] || "python",
+      lineNumbers: true,
+      theme: "default",
+    });
+
+    // Change editor mode and starter code on language change
+    languageSelect.addEventListener("change", () => {
+      const langId = languageSelect.value;
+      editor.setOption("mode", languageModes[langId] || "python");
+      editor.setValue(starterCodes[langId] || "");
+      outputElem.textContent = "";
+    });
+
+    // Run code button
+    document.getElementById("runBtn").addEventListener("click", async () => {
+      const source_code = editor.getValue();
+      const language_id = parseInt(languageSelect.value);
+      outputElem.textContent = "Running...";
+
+      try {
+        const res = await fetch(
+          "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+              "X-RapidAPI-Key": "YOUR_RAPIDAPI_KEY", // <--- Replace with your API key
+            },
+            body: JSON.stringify({ language_id, source_code }),
+          }
+        );
+
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+
+        const data = await res.json();
+
+        outputElem.textContent =
+          data.stdout || data.stderr || data.compile_output || "No output";
+
+      } catch (err) {
+        outputElem.textContent = "Error: " + err.message;
+      }
+    });
+
+    // Clear code button
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      editor.setValue("");
+      outputElem.textContent = "";
+    });
+
+    // Download code button
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      const langId = languageSelect.value;
+      const extMap = {
+        54: "cpp",
+        71: "py",
+        62: "java",
+        63: "cs",
+        50: "c",
+        80: "js",
+        72: "rb",
+        51: "go",
+        55: "cpp",
+        60: "swift",
+        78: "php",
+        77: "pas",
+      };
+      const ext = extMap[langId] || "txt";
+      const filename = `code.${ext}`;
+      const blob = new Blob([editor.getValue()], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
